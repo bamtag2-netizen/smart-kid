@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>صورتي الخفية</title>
+<style>
+  :root{
+    --bg1:#ffe9f3; --bg2:#e6f0ff; --main:#7c4dff; --main2:#5b32d6;
+    --good:#2ecc71; --bad:#ff5c5c; --ink:#2b2350;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;min-height:100%}
+  body{
+    font-family:"Segoe UI",Tahoma,Arial,sans-serif;color:var(--ink);
+    background:linear-gradient(160deg,var(--bg1),var(--bg2));
+    display:flex;flex-direction:column;align-items:center;
+    padding:14px 14px 30px;min-height:100vh;
+  }
+  header{width:100%;max-width:420px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  h1{font-size:22px;margin:0}
+  #hello{font-size:14px;opacity:.75;margin-top:2px}
+  .gear{background:#fff;border:0;border-radius:50%;width:44px;height:44px;font-size:22px;box-shadow:0 3px 10px rgba(0,0,0,.12)}
+  .boardWrap{
+    width:min(92vw,380px);margin-top:14px;border-radius:20px;overflow:hidden;
+    box-shadow:0 10px 30px rgba(90,60,200,.28);border:5px solid #fff;background:#fff;
+  }
+  canvas{display:block;width:100%;height:auto;aspect-ratio:3/4}
+  .progress{width:min(92vw,380px);margin-top:14px;text-align:center}
+  .bar{height:16px;background:#fff;border-radius:99px;overflow:hidden;box-shadow:inset 0 2px 6px rgba(0,0,0,.12)}
+  .bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffb300,#ff6f91);transition:width .6s}
+  #count{margin-top:6px;font-size:15px;font-weight:700}
+  .btn{
+    background:linear-gradient(180deg,var(--main),var(--main2));color:#fff;border:0;border-radius:18px;
+    font-size:20px;font-weight:800;padding:14px 26px;box-shadow:0 6px 0 #4527a8;margin-top:14px;font-family:inherit;
+  }
+  .btn:active{transform:translateY(3px);box-shadow:0 3px 0 #4527a8}
+  .btn.green{background:linear-gradient(180deg,#3ddc84,#22b866);box-shadow:0 6px 0 #178a4c}
+  .link{background:none;border:0;color:#6a5fa0;font-size:15px;margin-top:12px;text-decoration:underline;font-family:inherit}
+  .hint{font-size:13px;opacity:.7;margin-top:10px;text-align:center;max-width:340px}
+
+  #modal{position:fixed;inset:0;background:rgba(30,20,70,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:20}
+  #modal.show{display:flex}
+  #card{
+    background:#fff;border-radius:24px;padding:22px 18px;width:100%;max-width:400px;max-height:92vh;overflow:auto;
+    text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.35);animation:pop .25s ease-out;
+  }
+  #card h2{margin:8px 0 14px;font-size:24px;line-height:1.5}
+  #card p{font-size:17px;line-height:1.7;margin:6px 0}
+  .tag{display:inline-block;background:#efe9ff;color:var(--main2);border-radius:99px;padding:4px 14px;font-weight:700;font-size:14px}
+  .big{font-size:64px}
+  .opts{display:grid;gap:10px}
+  .opt{font-family:inherit;font-size:21px;font-weight:700;padding:14px;border-radius:16px;border:3px solid #e3dcff;background:#faf8ff;color:var(--ink)}
+  .opt:active{background:#efe9ff}
+  .opt.good{background:var(--good);border-color:var(--good);color:#fff;opacity:1!important}
+  .opt.bad{background:#ffdede;border-color:var(--bad);color:#a33}
+  .opt:disabled{opacity:.6}
+  .msg{min-height:26px;margin-top:10px;font-weight:800;font-size:18px}
+  .pin{font-size:28px;text-align:center;letter-spacing:8px;width:70%;padding:10px;border-radius:14px;border:3px solid #e3dcff;font-family:inherit}
+  label{display:block;text-align:right;font-weight:700;font-size:14px;margin:12px 0 4px}
+  #card input[type=text],#card input[type=tel],#card select,#card textarea{
+    width:100%;font-family:inherit;font-size:16px;padding:10px;border:2px solid #e3dcff;border-radius:12px;background:#faf8ff}
+  #card textarea{min-height:90px}
+  .shake{animation:shake .35s}
+  @keyframes pop{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+  @keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+  .conf{position:fixed;top:-40px;font-size:28px;pointer-events:none;z-index:50;animation:fall 2.6s linear forwards}
+  @keyframes fall{to{transform:translateY(112vh) rotate(420deg)}}
+
+  .tasklist{max-height:260px;overflow-y:auto;border:2px solid #e3dcff;border-radius:14px;padding:6px;background:#faf8ff;text-align:right}
+  .taskrow{display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid #ece6ff}
+  .taskrow:last-child{border-bottom:none}
+  .taskrow input{width:20px;height:20px;flex:0 0 auto}
+  .taskrow span{font-size:16px}
+  .taskcounter{font-size:14px;font-weight:800;margin:8px 0;color:var(--main2)}
+  .taskcounter.bad{color:var(--bad)}
+  .taskbtns{display:flex;gap:8px;justify-content:center;margin-bottom:8px}
+  .mini{font-family:inherit;background:#efe9ff;color:var(--main2);border:0;border-radius:99px;padding:6px 14px;font-size:13px;font-weight:700}
+  footer{margin-top:22px;text-align:center;font-size:12px;opacity:.55}
+
+  .dd{border:2px solid #e3dcff;border-radius:14px;background:#faf8ff;margin:12px 0;overflow:hidden}
+  .dd>summary{list-style:none;cursor:pointer;padding:12px 14px;font-weight:800;color:var(--main2);display:flex;align-items:center;justify-content:space-between}
+  .dd>summary::-webkit-details-marker{display:none}
+  .dd>summary::after{content:'▾';font-size:14px;transition:transform .2s}
+  .dd[open]>summary::after{transform:rotate(180deg)}
+  .dd>summary:active{background:#efe9ff}
+  .dd .ddbody{padding:0 10px 10px}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🧩 صورتي الخفية</h1>
+    <div id="hello"></div>
+  </div>
+  <button class="gear" id="gear" aria-label="إعدادات ولي الأمر">⚙️</button>
+</header>
+
+<div class="boardWrap"><canvas id="cv" width="720" height="960"></canvas></div>
+
+<div class="progress">
+  <div class="bar"><i id="fill"></i></div>
+  <div id="count"></div>
+</div>
+
+<button class="btn" id="go">🎯 ابدأ مهمة</button>
+<div class="hint" id="hint"></div>
+
+<footer>© حقوق الملكية محفوظة : باسم أبو أنس 2026</footer>
+
+<div id="modal"><div id="card"></div></div>
+
+<script>
+/* ============ أدوات صغيرة ============ */
+const $ = s => document.querySelector(s);
+function h(tag, cls, txt){ const e=document.createElement(tag); if(cls) e.className=cls; if(txt!==undefined) e.textContent=txt; return e; }
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+const store = {
+  get(k,d){ try{ const v=localStorage.getItem('mpz_'+k); return v===null?d:JSON.parse(v); }catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem('mpz_'+k, JSON.stringify(v)); }catch(e){} }
+};
+
+/* ============ الأسئلة والمهام (عدّلها كما تشاء) ============ */
+// o = الخيارات ، a = رقم الإجابة الصحيحة (يبدأ من 0) ، id ثابت لكل سؤال يُستخدم في الاختيار
+const QUESTIONS = [
+  {id:0,q:'كم يساوي 2 + 3 ؟', o:['4','5','6'], a:1},
+  {id:1,q:'كم يساوي 4 + 4 ؟', o:['8','7','9'], a:0},
+  {id:2,q:'كم يساوي 5 − 2 ؟', o:['2','4','3'], a:2},
+  {id:3,q:'كم يساوي 10 − 6 ؟', o:['4','5','3'], a:0},
+  {id:4,q:'كم يساوي 3 × 2 ؟', o:['5','6','8'], a:1},
+  {id:5,q:'كم يساوي 1 + 1 ؟', o:['2','3','1'], a:0},
+  {id:6,q:'كم يساوي 6 + 2 ؟', o:['7','8','9'], a:1},
+  {id:7,q:'كم يساوي 7 − 3 ؟', o:['3','4','5'], a:1},
+  {id:8,q:'كم يساوي 9 − 4 ؟', o:['4','5','6'], a:1},
+  {id:9,q:'كم يساوي 2 × 3 ؟', o:['5','6','7'], a:1},
+  {id:10,q:'كم يساوي 10 + 0 ؟', o:['9','10','11'], a:1},
+  {id:11,q:'كم يساوي 8 − 8 ؟', o:['0','1','8'], a:0},
+  {id:12,q:'كم يساوي 3 + 3 ؟', o:['5','6','7'], a:1},
+  {id:13,q:'كم يساوي 9 + 1 ؟', o:['9','10','11'], a:1},
+  {id:14,q:'كم يساوي 6 − 3 ؟', o:['2','3','4'], a:1},
+  {id:15,q:'كم يساوي 4 × 2 ؟', o:['6','8','10'], a:1},
+  {id:16,q:'كم يساوي 5 + 5 ؟', o:['9','10','11'], a:1},
+  {id:17,q:'كم يساوي 7 + 2 ؟', o:['8','9','10'], a:1},
+  {id:18,q:'كم يساوي 8 − 5 ؟', o:['2','3','4'], a:1},
+  {id:19,q:'كم يساوي 2 + 8 ؟', o:['9','10','11'], a:1},
+  {id:20,q:'ما لون السماء في النهار؟', o:['أخضر','أحمر','أزرق'], a:2},
+  {id:21,q:'ما لون الموز؟', o:['أصفر','بنفسجي','أسود'], a:0},
+  {id:22,q:'ما لون العشب؟', o:['أزرق','أخضر','أحمر'], a:1},
+  {id:23,q:'ما لون التفاحة عادة؟', o:['أحمر','أزرق','أسود'], a:0},
+  {id:24,q:'ما لون الثلج؟', o:['أبيض','أسود','أحمر'], a:0},
+  {id:25,q:'ما لون الليل؟', o:['أصفر','أسود','وردي'], a:1},
+  {id:26,q:'ما لون الشمس؟', o:['أصفر','أزرق','أخضر'], a:0},
+  {id:27,q:'بمزج اللون الأزرق والأصفر نحصل على؟', o:['أخضر','أحمر','بنفسجي'], a:0},
+  {id:28,q:'أي حيوان يعطينا الحليب؟', o:['الأسد','القطة','البقرة'], a:2},
+  {id:29,q:'أي حيوان يقول «مواء»؟', o:['القطة','الكلب','الحصان'], a:0},
+  {id:30,q:'من يُسمّى ملك الغابة؟', o:['الأسد','الأرنب','الفيل'], a:0},
+  {id:31,q:'أين تعيش السمكة؟', o:['في الماء','في الشجرة','في الرمل'], a:0},
+  {id:32,q:'أي حيوان يطير؟', o:['الفيل','العصفور','السمكة'], a:1},
+  {id:33,q:'أي حيوان له خرطوم طويل؟', o:['الفيل','القطة','الأرنب'], a:0},
+  {id:34,q:'أي حيوان يقول «نباح»؟', o:['القطة','الكلب','البقرة'], a:1},
+  {id:35,q:'أي حيوان بطيء جداً؟', o:['السلحفاة','الفهد','الأرنب'], a:0},
+  {id:36,q:'أي حيوان يعيش في الصحراء ويخزن الماء؟', o:['الجمل','الدب','البطريق'], a:0},
+  {id:37,q:'أي حيوان يقفز عالياً؟', o:['الأرنب','السلحفاة','الفيل'], a:0},
+  {id:38,q:'أي حيوان يُسمى سفينة الصحراء؟', o:['الجمل','الحصان','الأسد'], a:0},
+  {id:39,q:'أي حيوان يبني بيتاً من العسل؟', o:['النحلة','الفراشة','النملة'], a:0},
+  {id:40,q:'على أي كوكب نعيش؟', o:['المريخ','القمر','الأرض'], a:2},
+  {id:41,q:'كم عدد أيام الأسبوع؟', o:['5','7','10'], a:1},
+  {id:42,q:'كم عدد أشهر السنة؟', o:['10','12','15'], a:1},
+  {id:43,q:'أي فصل يكون فيه الجو بارداً؟', o:['الصيف','الشتاء','لا يوجد'], a:1},
+  {id:44,q:'الشمس تشرق من جهة...', o:['الغرب','الشمال','الشرق'], a:2},
+  {id:45,q:'كم عدد ألوان قوس قزح؟', o:['3','7','12'], a:1},
+  {id:46,q:'ما هو مصدر الضوء نهاراً؟', o:['القمر','الشمس','النجوم'], a:1},
+  {id:47,q:'ماذا نستخدم لنرى في الظلام؟', o:['المصباح','النظارة','المظلة'], a:0},
+  {id:48,q:'أين نضع الطعام لحفظه بارداً؟', o:['الفرن','الثلاجة','الخزانة'], a:1},
+  {id:49,q:'ما هو عكس كلمة «كبير»؟', o:['صغير','طويل','سريع'], a:0},
+  {id:50,q:'ما هو عكس كلمة «فوق»؟', o:['تحت','يمين','أمام'], a:0},
+  {id:51,q:'كم عدد أيام العطلة الأسبوعية غالباً؟', o:['1','2','3'], a:1},
+  {id:52,q:'كم عدد فصول السنة؟', o:['2','4','6'], a:1},
+  {id:53,q:'ماذا نلبس عندما يكون الجو بارداً؟', o:['معطف','مايوه','نظارة شمس'], a:0},
+  {id:54,q:'ماذا نستخدم عند المطر؟', o:['المظلة','الكتاب','الكرسي'], a:0},
+  {id:55,q:'ماذا نقول قبل الأكل؟', o:['الحمد لله','بسم الله','سبحان الله'], a:1},
+  {id:56,q:'ماذا نقول بعد الأكل؟', o:['الحمد لله','مع السلامة','صباح الخير'], a:0},
+  {id:57,q:'ماذا نقول عندما يعطينا أحد شيئاً؟', o:['لا أريد','شكراً','أعطني'], a:1},
+  {id:58,q:'ماذا نفعل عندما نقابل أحداً؟', o:['نصرخ','نقول السلام عليكم','نهرب'], a:1},
+  {id:59,q:'ماذا نفعل بالنفايات؟', o:['نرميها في سلة المهملات','نرميها في الشارع','نخبّئها'], a:0},
+  {id:60,q:'ماذا نقول عندما نخطئ؟', o:['لا شيء','آسف','لا يهم'], a:1},
+  {id:61,q:'ماذا نفعل قبل دخول المنزل بحذاء متسخ؟', o:['نخلعه','ندخل به','نركض'], a:0},
+  {id:62,q:'كيف نتكلم مع الكبار؟', o:['بصوت عالٍ','بأدب واحترام','بدون كلام'], a:1},
+  {id:63,q:'ماذا نفعل عند العطس؟', o:['نغطي فمنا','لا شيء','نصرخ'], a:0},
+  {id:64,q:'متى نطلب الإذن؟', o:['قبل أخذ شيء ليس لنا','لا داعي أبداً','بعد الأخذ فقط'], a:0},
+  {id:65,q:'كم عدد الصلوات في اليوم؟', o:['3','5','7'], a:1},
+  {id:66,q:'ما هو الشهر الذي نصوم فيه؟', o:['رمضان','شوال','رجب'], a:0},
+  {id:67,q:'ماذا نفعل عند سماع الأذان؟', o:['نلعب','نستمع وندعو','ننام'], a:1},
+  {id:68,q:'ما اسم كتاب المسلمين المقدس؟', o:['القرآن الكريم','القاموس','الروضة'], a:0},
+  {id:69,q:'إلى أين نتّجه في الصلاة؟', o:['الكعبة','المدرسة','البيت'], a:0},
+  {id:70,q:'ماذا نقول قبل بدء أي عمل؟', o:['بسم الله','مع السلامة','شكراً'], a:0},
+  {id:71,q:'من هو نبينا محمد ﷺ؟', o:['نبي ورسول','ملك','معلم فقط'], a:0},
+  {id:72,q:'ماذا نفعل يوم الجمعة في المسجد؟', o:['نلعب','نصلي الجمعة','ننام'], a:1},
+  {id:73,q:'ما عاصمة دولة الكويت؟', o:['مدينة الكويت','الجهراء','الفحيحيل'], a:0},
+  {id:74,q:'بأي قارة تقع الكويت؟', o:['آسيا','أوروبا','أفريقيا'], a:0},
+  {id:75,q:'ما هي عملة الكويت؟', o:['الدينار الكويتي','الريال','الدولار'], a:0},
+  {id:76,q:'أي بحر يطل عليه ساحل الكويت؟', o:['الخليج العربي','البحر الأحمر','المحيط الأطلسي'], a:0},
+  {id:77,q:'ما لون علم الكويت الذي يرمز للدم؟', o:['الأخضر','الأحمر','الأبيض'], a:1},
+  {id:78,q:'في أي قارة نعيش نحن العرب غالباً؟', o:['آسيا وأفريقيا','أوروبا','أستراليا'], a:0},
+  {id:79,q:'ما اسم أكبر مدينة في الكويت؟', o:['مدينة الكويت','الأحمدي','حولي'], a:0},
+  {id:80,q:'ماذا نسمي بيت العبادة عند المسلمين؟', o:['المسجد','الكنيسة','المعبد'], a:0},
+  {id:81,q:'ما الحرف الأول من كلمة «شمس»؟', o:['س','ش','م'], a:1},
+  {id:82,q:'ما الحرف الأول من كلمة «بيت»؟', o:['ت','ي','ب'], a:2},
+  {id:83,q:'ما الحرف الأول من كلمة «قمر»؟', o:['ق','ر','م'], a:0},
+  {id:84,q:'ما الحرف الأول من كلمة «كتاب»؟', o:['ك','ت','ب'], a:0},
+  {id:85,q:'كم عدد حروف الهجاء العربية؟', o:['20','28','40'], a:1},
+  {id:86,q:'ما الحرف الأخير من كلمة «مدرسة»؟', o:['م','ة','س'], a:1},
+  {id:87,q:'أي كلمة تبدأ بحرف الألف؟', o:['أسد','قلم','كتاب'], a:0},
+  {id:88,q:'ما الحرف الأول من كلمة «زهرة»؟', o:['ز','ر','ه'], a:0},
+  {id:89,q:'ما الحرف الأول من كلمة «نجمة»؟', o:['ن','ج','م'], a:0},
+  {id:90,q:'ما الحرف الأول من كلمة «سمكة»؟', o:['س','م','ك'], a:0},
+  {id:91,q:'كم عدد أصابع اليد الواحدة؟', o:['5','4','6'], a:0},
+  {id:92,q:'كم عدد أرجل القطة؟', o:['2','4','6'], a:1},
+  {id:93,q:'بماذا نرى؟', o:['العين','الأذن','الأنف'], a:0},
+  {id:94,q:'بماذا نسمع؟', o:['الأذن','العين','اليد'], a:0},
+  {id:95,q:'بماذا نشم الروائح؟', o:['الأنف','الفم','القدم'], a:0},
+  {id:96,q:'كم عدد أعيننا؟', o:['1','2','3'], a:1},
+  {id:97,q:'كم عدد أذنينا؟', o:['1','2','3'], a:1},
+  {id:98,q:'بماذا نتذوق الطعام؟', o:['اللسان','الأنف','الأذن'], a:0},
+  {id:99,q:'كم عدد أصابع القدم الواحدة؟', o:['5','4','6'], a:0}
+];
+// بنك مهام سهلة جاهز: يختار ولي الأمر منه ما يناسبه (لا يقل عن عدد قطع الصورة)
+// المهام الحقيقية يؤكد إنجازها ولي الأمر بالرمز السري
+const TASK_BANK = [
+  '🪥 اغسل أسنانك','🧼 اغسل يديك جيداً','🚿 استحم بمفردك','🦷 استخدم خيط الأسنان','💇 مشّط شعرك',
+  '🧴 استخدم كريماً بعد الاستحمام','👃 نظّف أنفك بمنديل','🛁 نظّف حوض الاستحمام بعد استخدامه','🧻 استخدم المنديل بأدب عند العطس','😴 نَم مبكراً الليلة',
+  '⏰ استيقظ بدون مساعدة','🧦 غيّر جواربك',
+  '🛏️ رتّب سريرك','🧸 رتّب ألعابك في مكانها','🧦 رتّب حذاءك بجانب الباب','🪑 رتّب كرسيك بعد الاستخدام','🧹 نظّف طاولتك',
+  '📚 رتّب كتبك على الرف','🧺 ساعد في طي الملابس','🗑️ أفرغ سلة المهملات في غرفتك','🖼️ رتّب أغراضك المدرسية في الحقيبة','🧽 امسح غبار طاولتك',
+  '🚪 أغلق باب غرفتك بهدوء','🪟 ساعد في تنظيف النافذة',
+  '🤗 ساعد أمك أو أباك في عمل بسيط','🍽️ ساعد في ترتيب طاولة الطعام','🧹 ساعد في كنس الأرض','🛒 ساعد في ترتيب أغراض التسوق','🐾 أطعم حيوانك الأليف',
+  '🌱 اسقِ نبتة في المنزل','📞 اتصل بجدك أو جدتك للسؤال عنهم','🚮 ارمِ القمامة في سلة المهملات','🧽 ساعد في غسل الصحون','🧦 ساعد أخاك أو أختك الصغيرة',
+  '🚗 ساعد في حمل أغراض بسيطة من السيارة','🧴 ساعد في ترتيب أدوات الحمام','🕯️ ساعد في إطفاء الأنوار قبل النوم',
+  '🙏 قل شكراً عندما يساعدك أحد','😊 ابتسم لأخيك أو أختك','🤝 صافح ضيوفك بأدب','🚪 افتح الباب لكبار السن','🗣️ تكلم بصوت هادئ داخل المنزل',
+  '👂 استمع لوالديك دون مقاطعة','🤲 اعتذر إذا أخطأت','🧍 قف عندما يدخل كبير السن','🍽️ انتظر دورك على طاولة الطعام','🚶 امشِ بهدوء داخل المنزل',
+  '📵 اطلب الإذن قبل استخدام جهاز أحد','🧢 اخلع قبعتك عند دخول المنزل','🤗 عانق أحد أفراد أسرتك اليوم','💬 قل كلمة لطيفة لشخص تحبه','🎁 شارك لعبة مع أخيك أو صديقك',
+  '🙏 قل دعاء قبل النوم','🕋 صلِّ مع أهلك','📿 احفظ آية قصيرة جديدة','🤲 ادعُ لوالديك','🕌 استمع لقصة نبي قبل النوم',
+  '🍽️ قل بسم الله قبل الأكل','🙏 قل الحمد لله بعد الأكل','🌙 احفظ دعاء الخروج من المنزل','📖 احفظ سورة قصيرة','🤲 قل جزاك الله خيراً لمن ساعدك',
+  '📖 اقرأ صفحة من قصة','📚 حل واجباً مدرسياً','✏️ تدرّب على كتابة اسمك','🔢 احفظ جدول ضرب سهل','🧠 احفظ كلمة إنجليزية جديدة',
+  '🖍️ ارسم رسمة جميلة','🎨 لوّن رسمة بألوان متنوعة','🧩 حل أحجية بسيطة','🔤 اكتب حروف الهجاء','📝 اكتب جملة قصيرة عن يومك',
+  '🎵 تعلّم كلمات أغنية تعليمية','🗺️ تعرّف على دولة جديدة على الخريطة',
+  '🍎 كُل قطعة فاكهة','🥦 كُل طبق خضار','💧 اشرب كوب ماء','🚴 العب رياضة لمدة 10 دقائق','🏃 اجرِ في الحديقة قليلاً',
+  '🧘 تنفّس بهدوء لدقيقة واحدة','🥗 ساعد في تحضير سلطة صحية','🍬 قلّل من أكل الحلويات اليوم','🦷 لا تنسَ غسل أسنانك بعد الأكل','😴 خذ قسطاً من الراحة بعد اللعب',
+  '🌳 العب في الحديقة','👫 شارك لعبة مع صديق','🚲 اركب دراجتك بحذر','🐦 راقب طائراً وتعلّم اسمه','🌤️ اخرج للتنزه مع أسرتك',
+  '🤝 تعرّف على صديق جديد بأدب','🏫 رتّب حقيبتك المدرسية لليوم التالي','🚦 تعلّم قاعدة أمان بسيطة على الطريق',
+  '🧠 فكّر في هدف صغير لهذا اليوم','📅 رتّب جدول يومك مع أهلك','🎯 حدد شيئاً تريد تعلّمه هذا الأسبوع','🖊️ اكتب شكراً لمعلمتك','🧦 رتّب دولاب ملابسك',
+  '🧺 ساعد في وضع الغسيل في الغسالة','🌟 افعل عملاً لطيفاً لشخص دون أن يطلب منك','🧴 رتّب أدواتك المدرسية على المكتب'
+];
+
+/* ============ الحالة ============ */
+const BW=720, BH=960;
+const GRID = {6:[2,3], 12:[3,4], 20:[4,5]};   // [أعمدة، صفوف]
+const state = {
+  name: store.get('name',''),
+  pin: store.get('pin','1234'),
+  pieces: store.get('pieces',12),
+  order: store.get('order',null),
+  count: store.get('count',0),
+  custom: store.get('custom',[]),
+  selectedTasks: store.get('selectedTasks',null),
+  selectedQuestions: store.get('selectedQuestions',null),
+  photo: store.get('photo',null)
+};
+if(!state.selectedTasks || !state.selectedTasks.length) state.selectedTasks = TASK_BANK.slice();
+if(!state.selectedQuestions || !state.selectedQuestions.length) state.selectedQuestions = QUESTIONS.map(q=>q.id);
+function persist(){ for(const k of ['name','pin','pieces','order','count','custom','selectedTasks','selectedQuestions','photo']) store.set(k,state[k]); }
+function newGame(){ state.order=shuffle([...Array(state.pieces).keys()]); state.count=0; persist(); }
+if(!GRID[state.pieces]) state.pieces=12;
+if(!state.order || state.order.length!==state.pieces) newGame();
+
+/* ============ الصورة واللوحة ============ */
+const cv=$('#cv'), ctx=cv.getContext('2d');
+const board=document.createElement('canvas'); board.width=BW; board.height=BH;
+
+function setImage(img){
+  const c=board.getContext('2d');
+  const s=Math.max(BW/img.width, BH/img.height);
+  const w=img.width*s, hh=img.height*s;
+  c.fillStyle='#fff'; c.fillRect(0,0,BW,BH);
+  c.drawImage(img,(BW-w)/2,(BH-hh)*0.25,w,hh);   // نميل للأعلى حتى يظهر الوجه
+  draw();
+}
+function placeholder(){
+  const c=board.getContext('2d');
+  const g=c.createLinearGradient(0,0,BW,BH); g.addColorStop(0,'#ffd1e8'); g.addColorStop(1,'#c9d8ff');
+  c.fillStyle=g; c.fillRect(0,0,BW,BH);
+  c.textAlign='center'; c.textBaseline='middle';
+  c.font='380px sans-serif'; c.fillText('🧒',BW/2,BH/2-40);
+  c.font='bold 48px sans-serif'; c.fillStyle='#5b32d6'; c.fillText('ضع صورة طفلك هنا',BW/2,BH-110);
+  draw();
+}
+function loadImage(src, onFail){
+  const img=new Image();
+  img.onload=()=>setImage(img);
+  img.onerror=onFail||placeholder;
+  img.src=src;
+}
+function initImage(){
+  if(state.photo) loadImage(state.photo, placeholder);
+  else loadImage('photo.jpg', placeholder);       // يمكن وضع الصورة بجانب الملف باسم photo.jpg
+}
+
+function draw(anim){
+  const [cols,rows]=GRID[state.pieces], pw=BW/cols, ph=BH/rows;
+  ctx.fillStyle='#f1edfb'; ctx.fillRect(0,0,BW,BH);
+  ctx.globalAlpha=0.16; ctx.drawImage(board,0,0); ctx.globalAlpha=1;    // الصورة الباهتة
+  const shown=new Set(state.order.slice(0,state.count));
+  // علامات الاستفهام للقطع المخفية
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font='bold '+Math.round(Math.min(pw,ph)*0.4)+'px sans-serif'; ctx.fillStyle='rgba(124,77,255,.35)';
+  for(let i=0;i<state.pieces;i++){ if(!shown.has(i)) ctx.fillText('?',(i%cols)*pw+pw/2,Math.floor(i/cols)*ph+ph/2); }
+  // القطع المكتشفة
+  shown.forEach(i=>{
+    const x=(i%cols)*pw, y=Math.floor(i/cols)*ph;
+    if(anim && anim.i===i){
+      const e=1-Math.pow(1-anim.t,3), s=1+(1-e)*0.35, cx=x+pw/2, cy=y+ph/2;
+      ctx.save(); ctx.translate(cx,cy); ctx.scale(s,s); ctx.translate(-cx,-cy);
+      ctx.shadowColor='rgba(0,0,0,.4)'; ctx.shadowBlur=30*(1-e);
+      ctx.drawImage(board,x,y,pw,ph,x,y,pw,ph);
+      ctx.globalAlpha=(1-e)*0.7; ctx.fillStyle='#fff'; ctx.fillRect(x,y,pw,ph);
+      ctx.restore(); ctx.globalAlpha=1;
+    } else ctx.drawImage(board,x,y,pw,ph,x,y,pw,ph);
+  });
+  // خطوط البازل
+  ctx.strokeStyle='rgba(124,77,255,.45)'; ctx.lineWidth=3; ctx.setLineDash([12,8]);
+  for(let c=1;c<cols;c++){ ctx.beginPath(); ctx.moveTo(c*pw,0); ctx.lineTo(c*pw,BH); ctx.stroke(); }
+  for(let r=1;r<rows;r++){ ctx.beginPath(); ctx.moveTo(0,r*ph); ctx.lineTo(BW,r*ph); ctx.stroke(); }
+  ctx.setLineDash([]);
+}
+function pop(i){
+  const t0=performance.now();
+  (function f(now){ const t=Math.min(1,(now-t0)/650); draw({i,t}); if(t<1) requestAnimationFrame(f); })(t0);
+}
+
+/* ============ صوت وقصاصات ============ */
+let ac;
+function beep(freqs){
+  try{
+    ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+    const t=ac.currentTime;
+    freqs.forEach((f,k)=>{
+      const o=ac.createOscillator(), g=ac.createGain();
+      o.type='triangle'; o.frequency.value=f; o.connect(g); g.connect(ac.destination);
+      g.gain.setValueAtTime(.16,t+k*.13); g.gain.exponentialRampToValueAtTime(.001,t+k*.13+.22);
+      o.start(t+k*.13); o.stop(t+k*.13+.24);
+    });
+  }catch(e){}
+}
+function confetti(n){
+  const em=['🎉','⭐','🎈','✨','🌟','💜'];
+  for(let i=0;i<n;i++){
+    const e=h('div','conf',em[Math.floor(Math.random()*em.length)]);
+    e.style.left=Math.random()*100+'vw'; e.style.animationDelay=Math.random()*0.8+'s';
+    document.body.appendChild(e); setTimeout(()=>e.remove(),3600);
+  }
+}
+
+/* ============ النافذة المنبثقة ============ */
+const modal=$('#modal'), card=$('#card');
+function openModal(nodes){ card.innerHTML=''; nodes.forEach(n=>card.appendChild(n)); modal.classList.add('show'); }
+function closeModal(){ modal.classList.remove('show'); }
+function shakeCard(){ card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); }
+
+/* ============ المهام ============ */
+let bank=[], bi=0, tbank=[], ti=0;
+function activeQuestions(){ return QUESTIONS.filter(q=>state.selectedQuestions.includes(q.id)); }
+function nextQuestion(){
+  const pool=activeQuestions();
+  if(bi>=bank.length||bank.length!==pool.length){ bank=shuffle(pool.slice()); bi=0; }
+  return bank[bi++];
+}
+function nextTask(){
+  const all=state.selectedTasks.concat(state.custom);
+  if(ti>=tbank.length||tbank.length!==all.length){ tbank=shuffle(all.slice()); ti=0; }
+  return tbank[ti++];
+}
+function startChallenge(){
+  if(state.count>=state.pieces) return celebrate();
+  const hasTasks=state.selectedTasks.length+state.custom.length>0;
+  const hasQuestions=state.selectedQuestions.length>0;
+  if(hasTasks && (!hasQuestions || Math.random()<0.3)) showTask(nextTask());
+  else if(hasQuestions) showQuiz(nextQuestion());
+  else showTask(nextTask());
+}
+
+function showQuiz(q){
+  const opts=shuffle(q.o.map((t,i)=>({t,ok:i===q.a})));
+  const msg=h('div','msg',''), box=h('div','opts');
+  opts.forEach(o=>{
+    const b=h('button','opt',o.t);
+    b.onclick=()=>{
+      if(o.ok){
+        b.classList.add('good'); box.querySelectorAll('button').forEach(x=>x.disabled=true);
+        msg.textContent='🌟 إجابة صحيحة!'; beep([660,880]); setTimeout(reveal,700);
+      } else { b.classList.add('bad'); b.disabled=true; msg.textContent='حاول مرة أخرى 💪'; beep([220]); shakeCard(); }
+    };
+    box.appendChild(b);
+  });
+  const cancel=h('button','link','إلغاء'); cancel.onclick=closeModal;
+  openModal([h('span','tag','❓ سؤال'), h('h2','',q.q), box, msg, cancel]);
+}
+
+function showTask(t){
+  const done=h('button','btn green','✅ أنجزت المهمة');
+  done.onclick=()=>askPin('ولي الأمر: أدخل الرمز السري لتأكيد إنجاز المهمة',()=>{ beep([660,880]); reveal(); },()=>showTask(t));
+  const other=h('button','link','مهمة أخرى'); other.onclick=startChallenge;
+  const cancel=h('button','link','إلغاء'); cancel.onclick=closeModal;
+  openModal([h('span','tag','⭐ مهمة حقيقية'), h('h2','',t), h('p','','عندما تنتهي اضغط الزر، وولي أمرك يؤكد.'), done, h('br'), other, h('br'), cancel]);
+}
+
+function askPin(text, ok, back){
+  const inp=h('input','pin'); inp.type='password'; inp.inputMode='numeric'; inp.maxLength=8; inp.placeholder='••••';
+  const msg=h('div','msg','');
+  const go=h('button','btn','تأكيد'), cancel=h('button','link','رجوع');
+  go.onclick=()=>{ if(inp.value===state.pin) ok(); else { msg.textContent='الرمز غير صحيح'; inp.value=''; shakeCard(); } };
+  inp.onkeydown=e=>{ if(e.key==='Enter') go.onclick(); };
+  cancel.onclick=()=>back?back():closeModal();
+  openModal([h('p','',text), inp, msg, go, h('br'), cancel]);
+  setTimeout(()=>inp.focus(),80);
+}
+
+function reveal(){
+  closeModal();
+  state.count++; persist(); render();
+  pop(state.order[state.count-1]);
+  if(state.count>=state.pieces){ confetti(60); beep([523,659,784,1046]); setTimeout(celebrate,1100); }
+  else confetti(14);
+}
+function celebrate(){
+  const view=h('button','btn green','👀 شاهد صورتي'); view.onclick=closeModal;
+  const again=h('button','btn','🔄 العب من جديد'); again.onclick=()=>{ newGame(); render(); draw(); closeModal(); };
+  openModal([h('div','big','🎉'), h('h2','','أحسنت'+(state.name?' يا '+state.name:'')+'!'), h('p','','اكتملت صورتك بعد إنجاز كل المهام 🌟'), view, h('br'), again]);
+}
+
+/* ============ الإعدادات (لولي الأمر) ============ */
+function field(text, el){ const w=document.createElement('div'); w.appendChild(h('label','',text)); w.appendChild(el); return w; }
+function showSettings(){
+  const name=h('input'); name.type='text'; name.value=state.name; name.placeholder='مثال: سارة';
+  const file=h('input'); file.type='file'; file.accept='image/*';
+  file.onchange=()=>{
+    const f=file.files[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload=()=>{
+      const im=new Image();
+      im.onload=()=>{
+        const s=Math.min(1,1000/Math.max(im.width,im.height));
+        const t=document.createElement('canvas'); t.width=im.width*s; t.height=im.height*s;
+        t.getContext('2d').drawImage(im,0,0,t.width,t.height);
+        state.photo=t.toDataURL('image/jpeg',0.85); persist(); setImage(im); msg.textContent='✅ تم حفظ الصورة';
+      };
+      im.src=r.result;
+    };
+    r.readAsDataURL(f);
+  };
+  const sel=h('select');
+  [['6','سهل: 6 قطع'],['12','متوسط: 12 قطعة'],['20','صعب: 20 قطعة']].forEach(([v,t])=>{ const o=h('option','',t); o.value=v; if(+v===state.pieces) o.selected=true; sel.appendChild(o); });
+
+  // ---- قائمة منسدلة: اختيار المهام من بنك 100 مهمة ----
+  const taskDD=document.createElement('details'); taskDD.className='dd';
+  const taskSummary=h('summary','', '📋 اختر المهام ('+TASK_BANK.length+' مهمة) — اضغط للفتح');
+  taskDD.appendChild(taskSummary);
+  const taskBody=h('div','ddbody');
+  const list=h('div','tasklist');
+  const boxes=[];
+  TASK_BANK.forEach(t=>{
+    const row=h('label','taskrow');
+    const cb=h('input'); cb.type='checkbox'; cb.checked=state.selectedTasks.includes(t); cb.value=t;
+    cb.onchange=updateCounters;
+    row.appendChild(cb); row.appendChild(h('span','',t));
+    list.appendChild(row); boxes.push(cb);
+  });
+  const btnAll=h('button','mini','تحديد الكل'); btnAll.type='button';
+  btnAll.onclick=()=>{ boxes.forEach(b=>b.checked=true); updateCounters(); };
+  const btnNone=h('button','mini','إلغاء التحديد'); btnNone.type='button';
+  btnNone.onclick=()=>{ boxes.forEach(b=>b.checked=false); updateCounters(); };
+  const taskbtns=h('div','taskbtns'); taskbtns.appendChild(btnAll); taskbtns.appendChild(btnNone);
+  const counter=h('div','taskcounter','');
+  taskBody.appendChild(taskbtns); taskBody.appendChild(list); taskBody.appendChild(counter);
+  taskDD.appendChild(taskBody);
+
+  // ---- قائمة منسدلة: اختيار الأسئلة من بنك 100 سؤال خفيف ----
+  const qDD=document.createElement('details'); qDD.className='dd';
+  const qSummary=h('summary','', '❓ اختر الأسئلة ('+QUESTIONS.length+' سؤال) — اضغط للفتح');
+  qDD.appendChild(qSummary);
+  const qBody=h('div','ddbody');
+  const qList=h('div','tasklist');
+  const qBoxes=[];
+  QUESTIONS.forEach(q=>{
+    const row=h('label','taskrow');
+    const cb=h('input'); cb.type='checkbox'; cb.checked=state.selectedQuestions.includes(q.id); cb.value=q.id;
+    cb.onchange=updateCounters;
+    row.appendChild(cb); row.appendChild(h('span','',q.q));
+    qList.appendChild(row); qBoxes.push(cb);
+  });
+  const qBtnAll=h('button','mini','تحديد الكل'); qBtnAll.type='button';
+  qBtnAll.onclick=()=>{ qBoxes.forEach(b=>b.checked=true); updateCounters(); };
+  const qBtnNone=h('button','mini','إلغاء التحديد'); qBtnNone.type='button';
+  qBtnNone.onclick=()=>{ qBoxes.forEach(b=>b.checked=false); updateCounters(); };
+  const qBtns=h('div','taskbtns'); qBtns.appendChild(qBtnAll); qBtns.appendChild(qBtnNone);
+  const qCounter=h('div','taskcounter','');
+  qBody.appendChild(qBtns); qBody.appendChild(qList); qBody.appendChild(qCounter);
+  qDD.appendChild(qBody);
+
+  const ta=h('textarea'); ta.value=state.custom.join('\n'); ta.placeholder='مهام إضافية من عندك، كل مهمة بسطر، مثال:\n🦷 استخدم خيط الأسنان\n📚 حل واجب الرياضيات';
+  ta.oninput=updateCounters;
+
+  function selectedTaskCount(){ return boxes.filter(b=>b.checked).length + ta.value.split('\n').map(s=>s.trim()).filter(Boolean).length; }
+  function selectedQCount(){ return qBoxes.filter(b=>b.checked).length; }
+  function updateCounters(){
+    const need=parseInt(sel.value,10), got=selectedTaskCount();
+    counter.textContent='المهام المختارة: '+got+' / المطلوب على الأقل: '+need;
+    counter.classList.toggle('bad', got<need);
+    const gotQ=selectedQCount();
+    qCounter.textContent='الأسئلة المختارة: '+gotQ+' / الحد الأدنى: 1';
+    qCounter.classList.toggle('bad', gotQ<1);
+  }
+  sel.onchange=updateCounters;
+
+  const pin=h('input'); pin.type='tel'; pin.placeholder='اتركه فارغاً للإبقاء على الحالي';
+  const msg=h('div','msg','');
+  const save=h('button','btn green','💾 حفظ');
+  save.onclick=()=>{
+    const np=parseInt(sel.value,10);
+    if(selectedTaskCount()<np){
+      msg.textContent='⚠️ عدد المهام المختارة أقل من عدد قطع الصورة، اختر المزيد';
+      shakeCard(); return;
+    }
+    if(selectedQCount()<1){
+      msg.textContent='⚠️ اختر سؤالاً واحداً على الأقل';
+      shakeCard(); return;
+    }
+    state.name=name.value.trim();
+    if(np!==state.pieces){ state.pieces=np; newGame(); }
+    state.selectedTasks=boxes.filter(b=>b.checked).map(b=>b.value);
+    state.selectedQuestions=qBoxes.filter(b=>b.checked).map(b=>parseInt(b.value,10));
+    state.custom=ta.value.split('\n').map(s=>s.trim()).filter(Boolean);
+    if(pin.value.trim()) state.pin=pin.value.trim();
+    persist(); render(); draw(); closeModal();
+  };
+  const reset=h('button','link','🔄 إعادة اللعب من البداية');
+  reset.onclick=()=>{ newGame(); render(); draw(); closeModal(); };
+  const cancel=h('button','link','إغلاق'); cancel.onclick=closeModal;
+  updateCounters();
+  openModal([h('h2','','⚙️ إعدادات ولي الأمر'), field('اسم الطفل',name), field('صورة الطفل',file), field('عدد القطع (تغييره يعيد اللعبة)',sel),
+             field('اختر المهام (يجب ألا يقل عددها عن عدد القطع)',taskDD),
+             field('اختر الأسئلة',qDD),
+             field('مهام إضافية من عندك',ta), field('رمز سري جديد (الافتراضي 1234)',pin), msg, save, h('br'), reset, h('br'), cancel]);
+}
+
+/* ============ العرض ============ */
+function render(){
+  $('#hello').textContent=state.name?('مرحباً يا '+state.name+' 👋'):'';
+  $('#fill').style.width=(state.count/state.pieces*100)+'%';
+  $('#count').textContent='القطع المكتشفة: '+state.count+' / '+state.pieces;
+  $('#go').textContent=state.count>=state.pieces?'🎉 أحسنت! اضغط للاحتفال':'🎯 ابدأ مهمة';
+  $('#hint').textContent=(!state.photo)?'ولي الأمر: اضغط ⚙️ لاختيار صورة الطفل (الرمز الافتراضي 1234)':'أجب عن الأسئلة وأنجز المهام لتكتشف صورتك!';
+}
+$('#go').onclick=startChallenge;
+$('#gear').onclick=()=>askPin('أدخل الرمز السري لولي الأمر',showSettings);
+
+render(); draw(); initImage();
+</script>
+</body>
+</html>
